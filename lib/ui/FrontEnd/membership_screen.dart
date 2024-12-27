@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gym_application/components/alert.dart';
 import 'package:gym_application/ui/Plans_Screen/basic_plan_screen.dart';
+import 'package:gym_application/ui/notofications.dart';
+import 'package:gym_application/ui/profile_screen.dart';
 
 class MembershipScreen extends StatefulWidget {
   const MembershipScreen({super.key});
@@ -10,13 +11,16 @@ class MembershipScreen extends StatefulWidget {
 }
 
 class _MembershipScreenState extends State<MembershipScreen> {
-  String? _selectedDuration = '';
-
   String? _basicSelectedDuration;
   String? _premiumSelectedDuration;
   String? _vipSelectedDuration;
 
   final List<String> _options = ['1 month', '6 months', '1 Year'];
+
+  // Plan titles (editable)
+  String _basicTitle = "Basic";
+  String _premiumTitle = "Premium";
+  String _vipTitle = "VIP";
 
   String? _validateDuration(String? selectedDuration) {
     if (selectedDuration == null || selectedDuration.isEmpty) {
@@ -25,21 +29,185 @@ class _MembershipScreenState extends State<MembershipScreen> {
     return null;
   }
 
+  // Dialog to edit the title
+  void _editTitle(String currentTitle, Function(String) onSave) {
+    TextEditingController _controller =
+    TextEditingController(text: currentTitle);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Plan Title'),
+          content: TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              hintText: 'Enter new title',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                onSave(_controller.text);
+                Navigator.pop(context);
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBenefitsList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Benefits:",
+          style: TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        SizedBox(height: 5),
+        Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 18),
+            SizedBox(width: 5),
+            Text("Unlimited Gym Access", style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 18),
+            SizedBox(width: 5),
+            Text("Free Classes", style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 18),
+            SizedBox(width: 5),
+            Text("Nutrition Plan", style: TextStyle(color: Colors.white)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlanCard({
+    required String title,
+    required String imageUrl,
+    required String? selectedDuration,
+    required Function(String?) onDurationChange,
+    required Function(String) onEditTitle,
+  }) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white, width: 2),
+            borderRadius: BorderRadius.circular(25),
+            color: Colors.grey[900],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(25),
+                child: Image.network(
+                  imageUrl,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        color: Colors.white),
+                  ),
+                  SizedBox(width: 10),
+                  IconButton(
+                    onPressed: () => _editTitle(title, onEditTitle),
+                    icon: Icon(Icons.edit, color: Colors.white),
+                  )
+                ],
+              ),
+              SizedBox(height: 10),
+              _buildBenefitsList(),
+              SizedBox(height: 10),
+              Column(
+                children: _options.map((option) {
+                  return RadioListTile<String>(
+                    title: Text(
+                      option +
+                          (option == '6 months'
+                              ? ' - \$120 (10% OFF)'
+                              : option == '1 Year'
+                              ? ' - \$200 (20% OFF)'
+                              : ' - \$25'),
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    value: option,
+                    groupValue: selectedDuration,
+                    onChanged: onDurationChange,
+                    activeColor: Colors.blueAccent,
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  String? validationError = _validateDuration(selectedDuration);
+                  if (validationError != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(validationError)),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Form submitted successfully')),
+                    );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BasicPlanScreen(),
+                      ),
+                    );
+                  }
+                },
+                child: Text("Submit"),
+              )
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-        child: Scaffold(
-          backgroundColor: Colors.black,
-      body: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        child: Center(
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                height: 20,
-              ),
+              SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -47,303 +215,90 @@ class _MembershipScreenState extends State<MembershipScreen> {
                     "Welcome to Our GYM",
                     style: TextStyle(fontSize: 20, color: Colors.grey),
                   ),
-                  ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: Icon(Icons.logout))
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => ProfileScreen()));
+                    },
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundImage: NetworkImage(
+                          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVCHywHxDFVk0j8PEgX8FELCQ8Vbiu2a49Xg&s'),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => NotificationScreen()));
+                    },
+                    icon: Icon(Icons.notifications, color: Colors.white),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.logout, color: Colors.white),
+                  ),
                 ],
               ),
-              SizedBox(
-                height: 20,
+              SizedBox(height: 20),
+              _buildPlanCard(
+                title: _basicTitle,
+                imageUrl:
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqEyFHvuFMAc-knprFmaQcUBLgB4bTxJwL9Q&s",
+                selectedDuration: _basicSelectedDuration,
+                onDurationChange: (value) {
+                  setState(() {
+                    _basicSelectedDuration = value;
+                  });
+                },
+                onEditTitle: (newTitle) {
+                  setState(() {
+                    _basicTitle = newTitle;
+                  });
+                },
               ),
-              //
-
-              //Basic
-              Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black, width: 3),
-                    borderRadius: BorderRadius.circular(25)),
-                margin: EdgeInsets.only(left: 20, right: 20),
-                padding: EdgeInsets.all(10),
-                // height: 300,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black),
-                          borderRadius: BorderRadius.circular(25)),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
-                        child: Image.network(
-                            // height: 200,
-                            //  width: double.infinity,
-                            fit: BoxFit.cover,
-                            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqEyFHvuFMAc-knprFmaQcUBLgB4bTxJwL9Q&s"),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      "Basic",
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20,color: Colors.white),
-                    ),
-                    Text("Choose an Option:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,color: Colors.white
-                        )),
-                    RadioListTile<String>(
-                        title: Text("1 month \$ 25",style: TextStyle(color: Colors.white),),
-                        value: '1 month',
-                        groupValue: _basicSelectedDuration,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _basicSelectedDuration = value;
-                          });
-                        }),
-                    RadioListTile<String>(
-                        title: Text('6 months \$ 120',style: TextStyle(color: Colors.white)),
-                        value: '6 months',
-                        groupValue: _basicSelectedDuration,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _basicSelectedDuration = value;
-                          });
-                        }),
-                    RadioListTile<String>(
-                        title: Text("1 Year \$ 200",style: TextStyle(color: Colors.white)),
-                        value: '1 Year',
-                        groupValue: _basicSelectedDuration,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _basicSelectedDuration = value;
-                          });
-                        }),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    ElevatedButton(
-                        onPressed: () {
-                          String? validationError =
-                              _validateDuration(_basicSelectedDuration);
-                          if (validationError != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(validationError)),
-                            );
-                          } else {
-                            // Proceed with submit
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('Form submitted successfully')),
-                            );
-                            Navigator.push(context, MaterialPageRoute(builder: (context)=>BasicPlanScreen()));
-                          }
-                        },
-                        child: Text("Submit"))
-                  ],
-                ),
+              _buildPlanCard(
+                title: _premiumTitle,
+                imageUrl:
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqEyFHvuFMAc-knprFmaQcUBLgB4bTxJwL9Q&s",
+                selectedDuration: _premiumSelectedDuration,
+                onDurationChange: (value) {
+                  setState(() {
+                    _premiumSelectedDuration = value;
+                  });
+                },
+                onEditTitle: (newTitle) {
+                  setState(() {
+                    _premiumTitle = newTitle;
+                  });
+                },
               ),
-              SizedBox(
-                height: 20,
+              _buildPlanCard(
+                title: _vipTitle,
+                imageUrl:
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqEyFHvuFMAc-knprFmaQcUBLgB4bTxJwL9Q&s",
+                selectedDuration: _vipSelectedDuration,
+                onDurationChange: (value) {
+                  setState(() {
+                    _vipSelectedDuration = value;
+                  });
+                },
+                onEditTitle: (newTitle) {
+                  setState(() {
+                    _vipTitle = newTitle;
+                  });
+                },
               ),
-              //Premium
-              Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black, width: 3),
-                    borderRadius: BorderRadius.circular(25)),
-                margin: EdgeInsets.only(left: 20, right: 20),
-                padding: EdgeInsets.all(10),
-                // height: 300,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black),
-                          borderRadius: BorderRadius.circular(25)),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
-                        child: Image.network(
-                            // height: 200,
-                            //  width: double.infinity,
-                            fit: BoxFit.cover,
-                            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqEyFHvuFMAc-knprFmaQcUBLgB4bTxJwL9Q&s"),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      "Premium",
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20,color: Colors.white),
-                    ),
-                    Text("Choose an Option:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,color: Colors.white
-                        )),
-                    RadioListTile<String>(
-                        title: Text("1 month \$ 25",style: TextStyle(color: Colors.white)),
-                        value: '1 month',
-                        groupValue: _premiumSelectedDuration,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _premiumSelectedDuration = value;
-                          });
-                        }),
-                    RadioListTile<String>(
-                        title: Text('6 months \$ 120',style: TextStyle(color: Colors.white)),
-                        value: '6 months',
-                        groupValue: _premiumSelectedDuration,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _premiumSelectedDuration = value;
-                          });
-                        }),
-                    RadioListTile<String>(
-                        title: Text("1 Year \$ 200",style: TextStyle(color: Colors.white)),
-                        value: '1 Year',
-                        groupValue: _premiumSelectedDuration,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _premiumSelectedDuration = value;
-                          });
-                        }),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    ElevatedButton(
-                        onPressed: () {
-                          String? validationError =
-                              _validateDuration(_premiumSelectedDuration);
-                          if (validationError != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(validationError)),
-                            );
-                          } else {
-                            // Proceed with submit
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('Form submitted successfully')),
-                            );
-                            Navigator.push(context, MaterialPageRoute(builder: (context)=>BasicPlanScreen()));
-
-                          }
-                        },
-                        child: Text("Submit"))
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              //VIP
-              Container(
-                decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black, width: 3),
-                    borderRadius: BorderRadius.circular(25)),
-                margin: EdgeInsets.only(left: 20, right: 20),
-                padding: EdgeInsets.all(10),
-                // height: 300,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black),
-                          borderRadius: BorderRadius.circular(25)),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25),
-                        child: Image.network(
-                            // height: 200,
-                            //  width: double.infinity,
-                            fit: BoxFit.cover,
-                            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqEyFHvuFMAc-knprFmaQcUBLgB4bTxJwL9Q&s"),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      "VIP",
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 20,color: Colors.white),
-                    ),
-                    Text("Choose an Option:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,color: Colors.white
-                        )),
-                    RadioListTile<String>(
-                        title: Text("1 month \$ 25",style: TextStyle(color: Colors.white)),
-                        value: '1 month',
-                        groupValue: _vipSelectedDuration,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _vipSelectedDuration = value;
-                          });
-                        }),
-                    RadioListTile<String>(
-                        title: Text('6 months \$ 120',style: TextStyle(color: Colors.white)),
-                        value: '6 months',
-                        groupValue: _vipSelectedDuration,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _vipSelectedDuration = value;
-                          });
-                        }),
-                    RadioListTile<String>(
-                        title: Text("1 Year \$ 200",style: TextStyle(color: Colors.white)),
-                        value: '1 Year',
-                        groupValue: _vipSelectedDuration,
-                        onChanged: (String? value) {
-                          setState(() {
-                            _vipSelectedDuration = value;
-                          });
-                        }),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    ElevatedButton(
-                        onPressed: () {
-                          String? validationError =
-                              _validateDuration(_vipSelectedDuration);
-                          if (validationError != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(validationError)),
-                            );
-                          } else {
-                            // Proceed with submit
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text('Form submitted successfully')),
-                            );
-                            Navigator.push(context, MaterialPageRoute(builder: (context)=>BasicPlanScreen()));
-
-                          }
-                        },
-                        child: Text("Submit"))
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 20,
-              ),
+              SizedBox(height: 20),
             ],
           ),
         ),
       ),
-    ));
+    );
   }
 }
